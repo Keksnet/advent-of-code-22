@@ -16,25 +16,30 @@ fun main() {
         dayWeek
     }
 
-    val dayFile = Path.of("input")
+    var dayFile = Path.of("input")
     if (!Files.exists(dayFile)) {
         Files.createDirectory(dayFile)
     }
 
-    createIfNotExists(dayFile.resolve("day$day.txt"))
-    createIfNotExists(dayFile.resolve("day$day.test.txt"))
-    for (i in 1..2) {
-        createIfNotExists(dayFile.resolve("day$day.$i.test_sol.txt"))
+    dayFile = dayFile.resolve("day$day")
+    if (!Files.exists(dayFile)) {
+        Files.createDirectory(dayFile)
     }
 
-    val sample = Files.readAllLines(dayFile.resolve("day$day.test.txt"))
+    createIfNotExists(dayFile.resolve("input.txt"))
+    createIfNotExists(dayFile.resolve("sample.txt"))
+    for (i in 1..2) {
+        createIfNotExists(dayFile.resolve("solution_$i.txt"))
+    }
+
+    val sample = Files.readAllLines(dayFile.resolve("sample.txt"))
     if (sample.size == 0) {
         println("Sample is empty. STOP.")
         return
     }
     for (i in 1..2) {
         val dayInstance = retrieveDayInstance(day)
-        val solution = Files.readString(dayFile.resolve("day$day.$i.test_sol.txt")).trim()
+        val solution = Files.readString(dayFile.resolve("solution_$i.txt")).trim()
         if (solution.isBlank()) {
             println("Solution for Part $i is empty. Skipping...")
             continue
@@ -54,7 +59,7 @@ fun main() {
     }
 
     val dayInstance = retrieveDayInstance(day)
-    val input = Files.readAllLines(dayFile.resolve("day$day.txt"))
+    val input = Files.readAllLines(dayFile.resolve("input.txt"))
     if (input.size == 0) {
         println("Input is empty. STOP.")
         return
