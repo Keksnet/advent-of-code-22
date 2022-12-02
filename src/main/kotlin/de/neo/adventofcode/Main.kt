@@ -50,11 +50,11 @@ fun main() {
             println("Test for Part $i SUCCESS.")
             continue
         }
+        println("Expected '$solution' got '$result' instead.")
         if (dayInstance.forceTest()) {
             println("Test for Part $i FAILED. Stop.")
             return
         }
-        println("Expected '$solution' got '$result' instead.")
         println("Test for Part $i FAILED.")
     }
 
