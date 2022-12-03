@@ -7,8 +7,22 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Calendar
 
-fun main() {
+fun main(args: Array<String>) {
     val day = run {
+        if (args.isNotEmpty()) {
+            if (args.size == 1) {
+                val suppliedDay = args[0].toIntOrNull()
+                if (suppliedDay == null || suppliedDay < 1 || suppliedDay > 25) {
+                    println("Invalid day given!")
+                } else {
+                    var daySupplied = suppliedDay.toString()
+                    while (daySupplied.length < 2) {
+                        daySupplied = "0$daySupplied"
+                    }
+                    return@run daySupplied
+                }
+            }
+        }
         var dayWeek = Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString()
         while (dayWeek.length < 2) {
             dayWeek = "0$dayWeek"
