@@ -46,12 +46,20 @@ fun main(args: Array<String>) {
         createIfNotExists(dayFile.resolve("solution_$i.txt"))
     }
 
-    val sample = Files.readAllLines(dayFile.resolve("sample.txt"))
+    var sample = Files.readAllLines(dayFile.resolve("sample.txt"))
     if (sample.size == 0) {
         println("Sample is empty. STOP.")
         return
     }
     for (i in 1..2) {
+        if (i == 2 && Files.exists(dayFile.resolve("sample_2.txt"))) {
+            println("Different sample for Part 2 detected.")
+            sample = Files.readAllLines(dayFile.resolve("sample_2.txt"))
+            if (sample.size == 0) {
+                println("Second sample is empty. STOP.")
+                return
+            }
+        }
         val dayInstance = retrieveDayInstance(day)
         val solution = Files.readString(dayFile.resolve("solution_$i.txt")).trim()
         if (solution.isBlank()) {
