@@ -53,13 +53,13 @@ fun main(args: Array<String>) {
     }
     for (i in 1..2) {
         val dayInstance = retrieveDayInstance(day)
-        val solution = Files.readString(dayFile.resolve("solution_$i.txt")).trim()
+        val solution = Files.readString(dayFile.resolve("solution_$i.txt")).trim().replace("\r\n", "\n")
         if (solution.isBlank()) {
             println("Solution for Part $i is empty. Skipping...")
             continue
         }
         dayInstance.common(sample.toTypedArray())
-        val result = if (i == 1) dayInstance.part01() else dayInstance.part02()
+        val result = (if (i == 1) dayInstance.part01() else dayInstance.part02()).trim().replace("\r\n", "\n")
         if (result == solution) {
             println("Test for Part $i SUCCESS.")
             continue
