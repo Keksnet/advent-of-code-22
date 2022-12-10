@@ -23,6 +23,13 @@ fun main(args: Array<String>) {
                 }
             }
         }
+        var dayEnv = System.getenv("DAY")
+        if (dayEnv != null) {
+            while (dayEnv.length < 2) {
+                dayEnv = "0$dayEnv"
+            }
+            return@run dayEnv
+        }
         var dayWeek = Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString()
         while (dayWeek.length < 2) {
             dayWeek = "0$dayWeek"
