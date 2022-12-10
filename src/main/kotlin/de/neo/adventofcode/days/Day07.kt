@@ -2,88 +2,101 @@ package de.neo.adventofcode.days
 
 class Day07 : IDay {
 
-    val fileTree = mutableMapOf<String, Int>()
+    inner class FileDescriptor(val name: String, private val parent: FileDescriptor? = rootFileDescriptor) {
+
+        private val children = mutableMapOf<String, FileDescriptor>()
+
+        var size = 0
+            set(value) {
+                if (parent != null) {
+                    parent.size += value - field
+                }
+                field = value
+            }
+
+        val isDir: Boolean
+            get() = children.isNotEmpty()
+
+        fun getOrCreateChild(name: String): FileDescriptor {
+            if (!children.contains(name)) {
+                children[name] = FileDescriptor(name, this)
+            }
+            return children[name]!!
+        }
+
+        fun resolveFileDescriptor(path: List<String>): FileDescriptor {
+            var descriptor = this
+            path.forEach { descriptor = descriptor.getOrCreateChild(it) }
+            return descriptor
+        }
+
+        fun getChildDescriptors(): List<FileDescriptor> {
+            return children.values.toList()
+        }
+
+    }
+
+    private val TOTAL_SPACE = 70_000_000
+    private val UPDATE_SIZE = 30_000_000
+
+    private val rootFileDescriptor = FileDescriptor("/", null)
 
     override fun common(input: Array<String>) {
-        var currentDirectory = ""
+        val currentDirectory = mutableListOf<String>()
         input.forEach {
-            if (it.startsWith("$ ")) {
-                val cmd = it.substring(2)
-                if (cmd.startsWith("cd ")) {
-                    val directoryParts = currentDirectory.split("/")
-                    val lastPart = directoryParts[directoryParts.size - 1]
-                    when (cmd) {
-                        "cd /" -> currentDirectory = "/"
-
-                        "cd sgt" -> {
-                            println("sgt detect: '$currentDirectory'")
-                            currentDirectory += "${if (currentDirectory.endsWith("/")) "" else "/"}${cmd.substring(3)}"
-
-                        }
-
-                        "cd .." -> {
-                            currentDirectory = currentDirectory.replace("/$lastPart", "")
-                        }
-
-                        else -> {
-                            currentDirectory += "${if (currentDirectory.endsWith("/")) "" else "/"}${cmd.substring(3)}"
-                        }
+            if (it.startsWith("$")) {
+                it.split(" ").let { args ->
+                    if (args.size == 3) {
+                        if (args[2] == "/") currentDirectory.clear()
+                        else if (args[2] == "..") currentDirectory.removeLast()
+                        else currentDirectory.add(args[2])
                     }
-                    println("change to '$currentDirectory'")
-                } else if (cmd == "ls") {}
-            } else {
-                val fileInfo = it.split(" ").toMutableList()
-                if (fileInfo[0] == "dir") {
-                    fileInfo[0] = "0"
                 }
-                val slashNeeded = !currentDirectory.endsWith("/")
-                fileTree["$currentDirectory${if (slashNeeded) "/" else ""}${fileInfo[1]}"] = fileInfo[0].toInt()
+            } else {
+                it.split(" ").let { args ->
+                    if (args.size == 2) {
+                        val size = args[0].toIntOrNull() ?: 0
+                        val name = args[1]
+                        rootFileDescriptor.resolveFileDescriptor(currentDirectory).getOrCreateChild(name).size = size
+                    }
+                }
             }
         }
     }
 
     override fun part01(): String {
-        val sizes = mutableMapOf<String, Int>()
-        fileTree.filter { it.value == 0 }.forEach { sizes[it.key] = it.value }
-        sizes.forEach {  sizeEntry ->
-            println("sz: $sizeEntry")
-            if (fileTree[sizeEntry.key] != 0) {
-                return@forEach
-            }
-            sizes[sizeEntry.key] = getSize(fileTree.filter { it.key.startsWith("${sizeEntry.key}/") }, "${sizeEntry.key}/")
-        }
-        sizes.filter { fileTree[it.key] == 0 && it.value <= 100_000 }.forEach {
-            //println(it)
-        }
-        return sizes.filter { fileTree[it.key] == 0 && it.value <= 100_000 }.map { it.value }.sum().toString()
-    }
-
-    fun getSize(tree: Map<String, Int>, filter: String): Int {
         var totalSize = 0
-        println("--------------------")
-        println(tree)
-        tree.forEach { treeEntry ->
-            if (treeEntry.key.contains("sgt")) {
-                print("")
+        var calculator: ((List<FileDescriptor>, String) -> Unit)? = null
+        calculator = { tree, prefix ->
+            tree.forEach {
+                /*
+                val indentation = "  ".repeat(prefix.count { it == '/' })
+                val descriptorInfo = if (it.isDir) "dir" else "file, size=${it.size}"
+                println("$indentation- ${it.name} ($descriptorInfo)")
+                 */
+                if (it.isDir) {
+                    if (it.size <= 100_000) totalSize += it.size
+                    calculator!!.invoke(it.getChildDescriptors(), "$prefix/${it.name}")
+                }
             }
-            println(treeEntry)
-            fileTree[treeEntry.key] = if (treeEntry.value == 0) {
-                println("===================")
-                println("${treeEntry.key}/")
-                println(fileTree.filter { it.key.startsWith("${treeEntry.key}") })
-                getSize(fileTree.filter { it.key.startsWith("${treeEntry.key}/") && it.value != 0 }, "${treeEntry.key}/")
-            } else {
-                treeEntry.value
-            }
-            totalSize += fileTree[treeEntry.key]!!
         }
-        println(totalSize)
-        println("----------------")
-        return totalSize
+        calculator.invoke(rootFileDescriptor.getChildDescriptors(), "")
+        return totalSize.toString()
     }
 
     override fun part02(): String {
-        return ""
+        val spaceFree = TOTAL_SPACE - rootFileDescriptor.size
+        val spaceNeeded = UPDATE_SIZE - spaceFree
+        var smallestDir = TOTAL_SPACE // use total space as placeholder
+        var findSmallestDir: ((List<FileDescriptor>) -> Unit)? = null
+        findSmallestDir = { tree ->
+            tree.forEach { descriptor ->
+                findSmallestDir!!.invoke(descriptor.getChildDescriptors().filter { it.isDir && it.size >= spaceNeeded })
+                if (descriptor.size < smallestDir) smallestDir = descriptor.size
+            }
+        }
+        findSmallestDir.invoke(rootFileDescriptor.getChildDescriptors().filter { it.isDir && it.size >= spaceNeeded })
+        return smallestDir.toString()
     }
 
 }
