@@ -1,78 +1,104 @@
 package de.neo.adventofcode.days
 
-import java.awt.Point
-
 class Day08 : IDay {
 
-    val grid = mutableMapOf<Int, MutableMap<Int, Int>>() // x = (y = high)
+    var xMax = 0
+    var yMax = 0
+    val grid = mutableMapOf<String, Int>()
+    val seen = mutableListOf<String>()
 
     override fun common(input: Array<String>) {
-        val p = Point()
-        input.forEach {
-            it.forEach {
-                val gridMap = (grid[p.x] ?: mutableMapOf())
-                gridMap[p.y] = it.code - 0x30
-                grid[p.x] = gridMap
-                p.x++
+        xMax = input[0].length
+        yMax = input.size
+        input.forEachIndexed { y, it ->
+            it.forEachIndexed { x, high ->
+                grid["$x;$y"] = high.code - 0x30
             }
-            p.x = 0
-            p.y++
         }
-        println(grid)
     }
 
     override fun part01(): String {
         var visibleTrees = 0
-        val seen = mutableListOf<String>()
-        grid.forEach { (x, yMap) ->
-            var highest = 0
-            for (entry in yMap) {
-                if (entry.value < highest) {
-                    break
+        for (y in 0 until yMax) {
+            val highest = Array(2) { -1 }
+            for (x in 0 until xMax) {
+                val xReverse = (xMax - 1) - x
+                val xHeight = grid["$x;$y"]!!
+                val xReverseHeight = grid["$xReverse;$y"]!!
+                x@ for (i in 0..1) {
+                    val importantX = if (i == 0) x else xReverse
+                    val importantHeight = if (i == 0) xHeight else xReverseHeight
+                    if (importantHeight > highest[i]) {
+                        highest[i] = importantHeight
+                        if (seen.contains("$importantX;$y")) continue@x
+                        seen.add("$importantX;$y")
+                        visibleTrees++
+                    }
                 }
-                if (seen.contains("$x;${entry.key}")) continue
-                highest = entry.value
-                visibleTrees++
-                seen.add("$x;${entry.key}")
-            }
-            highest = 0
-            for (entry in yMap.map { Pair(it.key, it.value) }.reversed()) {
-                if (entry.second < highest) {
-                    break
-                }
-                if (seen.contains("$x;${entry.first}")) continue
-                highest = entry.second
-                visibleTrees++
-                seen.add("$x;${entry.first}")
+
             }
         }
-        for (y in 0 until grid[0]!!.size) {
-            var highest = 0
-            for (x in 0 until grid.size) {
-                if (grid[x]?.get(y)!! < highest) {
-                    break
+        for (x in 0 until xMax) {
+            val highest = Array(2) { -1 }
+            for (y in 0 until yMax) {
+                val yReverse = (yMax - 1) - y
+                val yHeight = grid["$x;$y"]!!
+                val yReverseHeight = grid["$x;$yReverse"]!!
+                y@ for (i in 0..1) {
+                    val importantY = if (i == 0) y else yReverse
+                    val importantHeight = if (i == 0) yHeight else yReverseHeight
+                    if (importantHeight > highest[i]) {
+                        if (importantHeight == 9 && x == 3) {
+                            print("")
+                        }
+                        highest[i] = importantHeight
+                        if (seen.contains("$x;$importantY")) continue@y
+                        seen.add("$x;$importantY")
+                        visibleTrees++
+                    }
                 }
-                if (seen.contains("$x;${y}")) continue
-                highest = grid[x]?.get(y)!!
-                visibleTrees++
-                seen.add("$x;${y}")
             }
         }
-        for (y in 0 until grid[0]!!.size) {
-            for (x in 0 until grid.size) {
-                if (seen.contains("$x;$y")) {
-                    print("\u001b[31m${grid[x]?.get(y)!!}\u001b[0m")
-                    continue
-                }
-                print("${grid[x]?.get(y)!!}")
+        /*
+        for (y in 0 until yMax) {
+            for (x in 0 until xMax) {
+                if (seen.contains("$x;$y")) print("\u001b[31m${grid["$x;$y"]}\u001b[0m")
+                else print("${grid["$x;$y"]}")
             }
-            print("\n")
+            print("\n\u001B[0m")
         }
+         */
         return visibleTrees.toString()
     }
 
     override fun part02(): String {
-        return ""
+        val viewDistances = mutableListOf<Int>()
+        for (y in 1 until yMax - 1) {
+            for (x in 1 until xMax - 1) {
+                val houseHeight = grid["$x;$y"]!!
+                val viewDistance = Array(4) { -1 }
+                x1@ for (x1 in 1 until xMax) {
+                    val xRight = x + x1
+                    val xLeft = x - x1
+                    if (viewDistance[0] == -1 && xRight >= xMax) viewDistance[0] = x1 - 1
+                    if (viewDistance[1] == -1 && xLeft < 0) viewDistance[1] = x1 - 1
+                    if (viewDistance[0] == -1 && grid["$xRight;$y"]!! >= houseHeight) viewDistance[0] = x1
+                    if (viewDistance[1] == -1 && grid["$xLeft;$y"]!! >= houseHeight) viewDistance[1] = x1
+                    if (viewDistance[0] != -1 && viewDistance[1] != -1) break@x1
+                }
+                y1@ for (y1 in 1 until yMax) {
+                    val yDown = y + y1
+                    val yUp = y - y1
+                    if (viewDistance[2] == -1 && yDown >= yMax) viewDistance[2] = y1 - 1
+                    if (viewDistance[3] == -1 && yUp < 0) viewDistance[3] = y1 - 1
+                    if (viewDistance[2] == -1 && grid["$x;$yDown"]!! >= houseHeight) viewDistance[2] = y1
+                    if (viewDistance[3] == -1 && grid["$x;$yUp"]!! >= houseHeight) viewDistance[3] = y1
+                    if (viewDistance[2] != -1 && viewDistance[3] != -1) break@y1
+                }
+                viewDistances.add(viewDistance.reduce { acc, i -> acc * i })
+            }
+        }
+        return viewDistances.max().toString()
     }
 
 }
