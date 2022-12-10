@@ -55,7 +55,7 @@ class Day09 : IDay {
                             tail.y += direction.yMod
                         } else {
                             // diagonally
-                            val (vec, length) = tail.getMovementVector(head)
+                            val vec = tail.getMovementVector(head)
                             vec.mask()
                             tail.move(tail.x + vec.x, tail.y + vec.y)
                         }
@@ -103,39 +103,72 @@ class Day09 : IDay {
                 for (i in 0 until steps) {
                     // Move head
                     knots[0].move(knots[0].x + direction.xMod, knots[0].y + direction.yMod)
-                    for (knotPos in 1 until knots.size) {
-                        val head = knots[knotPos - 1]
-                        val tail = knots[knotPos]
-                        if ((head.x - tail.x).absoluteValue > 1 || (head.y - tail.y).absoluteValue > 1) {
-                            // Tail has to follow
-                            if ((head.x - tail.x).absoluteValue > 1 && head.y == tail.y) {
-                                // in x direction
-                                tail.x += direction.xMod
-                            } else if (head.x == tail.x && (head.y - tail.y).absoluteValue > 1) {
-                                // in y direction
-                                tail.y += direction.yMod
-                            } else {
-                                // diagonally
-                                val (vec, length) = tail.getMovementVector(head)
-                                vec.mask()
-                                tail.move(tail.x + vec.x, tail.y + vec.y)
+                    while (!isOk(knots)) {
+                        for (knotPos in 1 until knots.size) {
+                            val head = knots[knotPos - 1]
+                            val tail = knots[knotPos]
+                            val vec = tail.getMovementVector(head)
+                            val knotDir = vec.getDirection()
+                            if ((head.x - tail.x).absoluteValue > 1 || (head.y - tail.y).absoluteValue > 1) {
+                                // Tail has to follow
+                                if ((head.x - tail.x).absoluteValue > 1 && head.y == tail.y) {
+                                    // in x direction
+                                    tail.x += knotDir.xMod
+                                } else if (head.x == tail.x && (head.y - tail.y).absoluteValue > 1) {
+                                    // in y direction
+                                    tail.y += knotDir.yMod
+                                } else {
+                                    // diagonally
+                                    vec.mask()
+                                    tail.move(tail.x + vec.x, tail.y + vec.y)
+                                }
                             }
+                            knots[knotPos - 1] = head
+                            knots[knotPos] = tail
                         }
-                        knots[knotPos - 1] = head
-                        knots[knotPos] = tail
                     }
                     if (!tailPositions.contains("${knots[9].x};${knots[9].y}")) {
                         tailPositions.add("${knots[9].x};${knots[9].y}")
                     }
                 }
             }
+            /*
+            var y: Int
+            for (_y in 0 until 21) {
+                y = 15 - _y
+                for (x in -11 until 15) {
+                    if (knots[0].x == x && knots[0].y == y) {
+                        print("H")
+                    } else if (x == 0 && y == 0) {
+                        print("s")
+                    } else if (knots.any { it.x == x && it.y == y }) {
+                        print(knots.indexOfFirst { it.x == x && it.y == y })
+                    } else {
+                        print(".")
+                    }
+                }
+                print("\n")
+            }
+            print("")
+            */
         }
         return tailPositions.size.toString()
     }
 
-    fun Point.getMovementVector(goal: Point): Pair<Vec2D, Int> { // Vector, length
-        val vec = Vec2D(goal.x - x, goal.y - y)
-        return Pair(vec, vec.normalize())
+    fun isOk(knots: Array<Point>): Boolean {
+        for (knotPos in 1 until knots.size) {
+            val head = knots[knotPos - 1]
+            val tail = knots[knotPos]
+            if ((head.x - tail.x).absoluteValue > 1 || (head.y - tail.y).absoluteValue > 1) {
+                // Tail has to follow
+                return false
+            }
+        }
+        return true
+    }
+
+    fun Point.getMovementVector(goal: Point): Vec2D {
+        return Vec2D(goal.x - x, goal.y - y)
     }
 
 }
